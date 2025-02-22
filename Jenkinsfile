@@ -11,7 +11,6 @@ pipeline {
             DOCKER_PASS = 'dockerhub'
             IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
             IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
-	    JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
     }
   stages {
     stage("Cleanup Workscape") {
@@ -84,8 +83,11 @@ pipeline {
      stage("Trigger CD Pipeline") {
             steps {
                 script {
-			echo "${JENKINS_API_TOKEN}"
-                    sh "curl -v -k --user santosh:${JENKINS_API_TOKEN} -X POST -H 'cache-control: no-cache' -H 'content-type: application/x-www-form-urlencoded' --data 'IMAGE_TAG=${IMAGE_TAG}' 'ec2-54-167-84-132.compute-1.amazonaws.com:8080/job/gitops-register-app/buildWithParameters?token=gitops-token'"
+			withCredentials([string(credentialsId: 'JENKINS_API_TOKEN', variable: 'JENKINS_API_TOKEN')]) {
+            echo "Triggering CD pipeline with API token"
+            sh """
+              curl -v -k --user santosh:${JENKINS_API_TOKEN} -X POST -H 'cache-control: no-cache' -H 'content-type: application/x-www-form-urlencoded' --data 'IMAGE_TAG=${IMAGE_TAG}' 'http://ec2-54-167-84-132.compute-1.amazonaws.com:8080/job/gitops-register-app/buildWithParameters?token=gitops-token'
+            """
                 }
             }
        }
